@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MdAddShoppingCart } from 'react-icons/md';
 
 import { ProductList } from './styles';
 import { api } from '../../services/api';
 import { formatPrice } from '../../util/format';
 import { useCart } from '../../hooks/useCart';
+import { ProductCard } from '../../components/Product';
 
 interface Product {
   id: number;
@@ -13,7 +13,7 @@ interface Product {
   image: string;
 }
 
-interface ProductFormatted extends Product {
+export interface ProductFormatted extends Product {
   priceFormatted: string;
 }
 
@@ -22,44 +22,40 @@ interface CartItemsAmount {
 }
 
 const Home = (): JSX.Element => {
-  // const [products, setProducts] = useState<ProductFormatted[]>([]);
-  // const { addProduct, cart } = useCart();
+  const [products, setProducts] = useState<ProductFormatted[]>([]);
+  const { addProduct, cart } = useCart();
 
-  // const cartItemsAmount = cart.reduce((sumAmount, product) => {
-  //   // TODO
-  // }, {} as CartItemsAmount)
-
+  const cartItemsAmount = cart.reduce((productsAmount, product) => {
+    productsAmount[product.id] = productsAmount[product.id] ?? 0 + product.amount;
+    return productsAmount;
+  }, {} as CartItemsAmount);
+  
   useEffect(() => {
     async function loadProducts() {
-      // TODO
+      const productsRaw = (await api.get('products')).data as Product[];
+      setProducts(productsRaw.map((product) => ({
+        ...product,
+        priceFormatted: formatPrice(product.price),
+      })));
     }
 
     loadProducts();
   }, []);
 
   function handleAddProduct(id: number) {
-    // TODO
+    addProduct(id);
   }
 
   return (
     <ProductList>
-      <li>
-        <img src="https://rocketseat-cdn.s3-sa-east-1.amazonaws.com/modulo-redux/tenis1.jpg" alt="Tênis de Caminhada Leve Confortável" />
-        <strong>Tênis de Caminhada Leve Confortável</strong>
-        <span>R$ 179,90</span>
-        <button
-          type="button"
-          data-testid="add-product-button"
-        // onClick={() => handleAddProduct(product.id)}
-        >
-          <div data-testid="cart-product-quantity">
-            <MdAddShoppingCart size={16} color="#FFF" />
-            {/* {cartItemsAmount[product.id] || 0} */} 2
-          </div>
-
-          <span>ADICIONAR AO CARRINHO</span>
-        </button>
-      </li>
+      {products.map(product =>
+        <ProductCard
+          key={product.id}
+          handleAddProduct={() => handleAddProduct(product.id)}
+          amount={cartItemsAmount[product.id] || 0}
+          {...product}
+        />
+      )}
     </ProductList>
   );
 };
